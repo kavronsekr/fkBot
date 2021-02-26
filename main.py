@@ -6,6 +6,7 @@ import json
 
 cache = PlayerCache(3600)
 client = discord.Client()
+token = ""
 
 hitting_stats = ['divinity', 'martyrdom',
                  'moxie', 'musclitude',
@@ -95,4 +96,4 @@ async def on_message(message):
         await message.channel.send(embed=emb)
 
 
-client.run('Nzc4MTIyMjk5NDU4MzIyNDYz.X7NY3Q.GDsI4mNPeFeDvWKRjj9INz5k7lU')
+client.run(token)
