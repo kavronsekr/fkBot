@@ -1,12 +1,22 @@
 import discord
+from discord.ext import commands
 from player_cache import PlayerCache
+import os
+import random
 import aiohttp
 import asyncio
 import json
 
-cache = PlayerCache(3600)
-client = discord.Client()
-token = ""
+cache = PlayerCache()
+
+token_filename = 'tokens.txt'
+token_file = open(token_filename, 'r')
+token = token_file.readline()
+
+ping_strings = ['Pong!', ':heartpulse:',
+                'Taco Baco!', ':eyes:',
+                ':ping_pong:',
+                'Thomas Dracaena hit a ground out to Edric Tosser']
 
 hitting_stats = ['divinity', 'martyrdom',
                  'moxie', 'musclitude',
@@ -25,6 +35,31 @@ defense_stats = ['anticapitalism', 'chasiness',
 vibe_stats = ['buoyancy', 'cinnamon', 'pressurization']
 other_stats = ['totalFingers', 'peanutAllergy',
                'soul']
+
+default_settings = {"prefix": "fk!",
+                    "channels": None,
+                    "roles": None
+                    }
+settings = dict()
+
+
+def prefix(bot, message):
+    server_id = message.guild.id
+    return settings.get(server_id, 'fk!')
+
+
+def load_settings():
+    dir_path, _, files = os.walk('./data/')
+    for file in files:
+        full_path = os.path.join(dir_path, file)
+        settings_file = open(full_path, 'r')
+        server_id = settings_file.readline()
+        server_settings = settings_file.readline()
+        settings[server_id] = json.loads(server_settings)
+    return
+
+
+fk_bot = commands.Bot(command_prefix=prefix)
 
 
 def get_stats_str(player_dict, stat_list):
@@ -64,36 +99,38 @@ def get_player_stats(arg_str):
     return player
 
 
-@client.event
+@fk_bot.event
 async def on_ready():
-    print('log in as {0.user}'.format(client))
-    await cache.start()
+    print('log in as {0.user}'.format(fk_bot))
 
 
-@client.event
-async def on_message(message):
-    if not message.content.startswith('fk!'):
-        return
-    if message.author == client.user:
-        return
-    tkns = message.content.split(None, 1)
-    cmd = tkns[0]
-    ret = None
+@fk_bot.event
+async def on_guild_join(guild):
+    settings[guild.id] = default_settings
+    settings_str = json.dumps(default_settings)
+    file = open('data/{}.json'.format(guild.id), 'w')
+    file.writelines(["{}\n".format(guild.id), settings_str])
+    file.close()
+
+
+@fk_bot.command(description="ping!")
+async def ping(ctx):
+    await ctx.send(random.choice(ping_strings))
+
+
+@fk_bot.command(description="print a player's fk stats")
+async def stats(ctx, *, player):
+    pl_stats = get_player_stats(player)
     emb = None
-    if cmd == 'fk!hello':
-        ret = 'Hello!'
-    elif cmd == 'fk!stats':
-        stats = get_player_stats(tkns[1])
-        if stats is not None:
-            ret, emb = print_player_fk(stats)
-        else:
-            ret = "I couldn't find {}!".format(tkns[1])
-    elif cmd == 'fk!set':
-        ret = ""
+    if pl_stats is not None:
+        ret, emb = print_player_fk(pl_stats)
+    else:
+        ret = "I couldn't find {}!".format(player)
     if ret is not None:
-        await message.channel.send(ret)
+        await ctx.send(ret)
     if emb is not None:
-        await message.channel.send(embed=emb)
+        await ctx.send(embed=emb)
+    return
 
 
-client.run(token)
+fk_bot.run(token)

@@ -2,24 +2,19 @@ import json
 import asyncio
 import aiohttp
 import time
+from discord.ext import tasks
 
 
 class PlayerCache:
-    def __init__(self, interval):
+    def __init__(self):
         self.player_cache = dict()
         self.player_map = dict()
         self.player_ids = set()
 
-        self.is_started = False
-        self.interval = interval
-        self._task = None
+        self.get_player_ids.start()
         return
 
-    async def start(self):
-        if not self.is_started:
-            self.is_started = True
-            self._task = asyncio.ensure_future(self._run())
-
+    @tasks.loop(seconds=3600)
     async def get_player_ids(self):
         async with aiohttp.ClientSession() as session:
             async with session.get('https://blaseball.com/database/allTeams') as resp:
@@ -71,7 +66,15 @@ class PlayerCache:
         else:
             return None
 
-    async def _run(self):
-        while True:
-            await self.get_player_ids()
-            await asyncio.sleep(self.interval)
+    async def update_player(self, key):
+        if key in self.player_cache.keys():
+            player_id = key
+            player_name = self.player_cache[key]['name']
+        elif key in self.player_map.keys():
+            player_id = self.player_map[key]
+            player_name = key
+        else:
+            return "I couldn't find that player! If they were just hatched, it'll take me some time to find them..."
+        await self.form_cache(player_id)
+        return "Updated the data for {}!".format(player_name)
+
