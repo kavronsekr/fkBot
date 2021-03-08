@@ -26,7 +26,8 @@ class PlayerCache:
                         self.player_ids.update(team['bullpen'])
                         self.player_ids.update(team['bench'])
                 else:
-                    print("Bad response" + str(resp.status))
+                    print("Bad response " + str(resp.status))
+                    return
             async with session.get('https://www.blaseball.com/api/getTribute') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
@@ -34,6 +35,7 @@ class PlayerCache:
                         self.player_ids.add(p['playerId'])
                 else:
                     print("Bad response " + str(resp.status))
+                    return
         print(str(len(self.player_ids)) + " loaded!")
         await self.form_cache()
         return
@@ -51,7 +53,8 @@ class PlayerCache:
                         update_time = int(time.time())
                         for p in data:
                             pid = p['id']
-                            self.player_map[p['name']] = pid
+                            lc_name = p['name'].lower()
+                            self.player_map[lc_name] = pid
                             self.player_cache[pid] = p
                             self.player_cache[pid]['update_time'] = update_time
                     else:
@@ -61,8 +64,8 @@ class PlayerCache:
     def get_player(self, key):
         if key in self.player_cache.keys():
             return self.player_cache[key]
-        elif key in self.player_map.keys():
-            return self.player_cache[self.player_map[key]]
+        elif str(key).lower() in self.player_map.keys():
+            return self.player_cache[self.player_map[key.lower()]]
         else:
             return None
 
