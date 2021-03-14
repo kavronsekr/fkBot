@@ -21,20 +21,23 @@ ping_strings = ['Pong!', ':heartpulse:',
                 'Have you fed your hexbugs today?',
                 'Chorby Short! Chorby Tall! Chorby swings at every ball!']
 
-hitting_stats = ['divinity', 'martyrdom',
+hitting_stats = ['hittingRating',
+                 'divinity', 'martyrdom',
                  'moxie', 'musclitude',
                  'patheticism', 'thwackability',
-                 'tragicness', 'hittingRating']
-pitching_stats = ['coldness', 'overpowerment',
+                 'tragicness']
+pitching_stats = ['pitchingRating',
+                  'coldness', 'overpowerment',
                   'ruthlessness', 'shakespearianism',
-                  'suppression', 'unthwackability',
-                  'pitchingRating']
-baserunning_stats = ['baseThirst', 'continuation',
+                  'suppression', 'unthwackability']
+baserunning_stats = ['baserunningRating',
+                     'baseThirst', 'continuation',
                      'groundFriction', 'indulgence',
-                     'laserlikeness', 'baserunningRating']
-defense_stats = ['anticapitalism', 'chasiness',
+                     'laserlikeness']
+defense_stats = ['defenseRating',
+                 'anticapitalism', 'chasiness',
                  'omniscience', 'tenaciousness',
-                 'watchfulness', 'defenseRating']
+                 'watchfulness']
 vibe_stats = ['buoyancy', 'cinnamon', 'pressurization']
 other_stats = ['totalFingers', 'peanutAllergy',
                'soul']
@@ -46,17 +49,11 @@ default_settings = {"prefix": "fk!",
 settings = dict()
 
 
-def validate_prefix(bot, message):
-    server_id = message.guild.id
-    server_settings = settings.get(server_id)
-    if server_settings is None:
-        return "fk!"
-    return server_settings.get("prefix", "fk!")
-
-
 def load_settings():
     for dir_path, _, files in os.walk('./data/'):
         for file in files:
+            if file == "template.json":
+                continue
             full_path = os.path.join(dir_path, file)
             try:
                 settings_file = open(full_path, 'r')
@@ -83,6 +80,14 @@ def save_settings(guild):
     return True
 
 
+def validate_prefix(bot, message):
+    server_id = message.guild.id
+    server_settings = settings.get(server_id)
+    if server_settings is None:
+        return "fk!"
+    return server_settings.get("prefix", "fk!")
+
+
 def validate_user(user, channel, guild):
     user_permissions = channel.permissions_for(user)
     user_roles = user.roles
@@ -98,8 +103,11 @@ def validate_user(user, channel, guild):
 
 
 def validate_channel(channel, guild):
-    if channel in settings.get(guild.id).get("channels"):
+    if not settings.get(guild.id).get("channels"):
         return True
+    for c in settings.get(guild.id).get("channels"):
+        if c == channel.id:
+            return True
     return False
 
 
@@ -122,11 +130,11 @@ def print_player_fk(player_dict):
     vib_str = get_stats_str(player_dict, vibe_stats)
     oth_str = get_stats_str(player_dict, other_stats)
     emb = discord.Embed(title=player_dict['name'])
-    emb.add_field(name="Hitting", value=hit_str, inline=True)
-    emb.add_field(name="Pitching", value=pit_str, inline=True)
+    emb.add_field(name="Hitting:  {:.5f} Stars".format(player_dict["hittingRating"]*5), value=hit_str, inline=True)
+    emb.add_field(name="Pitching:  {:.5f} Stars".format(player_dict["pitchingRating"]*5), value=pit_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
-    emb.add_field(name="Baserunning", value=run_str, inline=True)
-    emb.add_field(name="Defense", value=def_str, inline=True)
+    emb.add_field(name="Baserunning:  {:.5f} Stars".format(player_dict["baserunningRating"]*5), value=run_str, inline=True)
+    emb.add_field(name="Defense:  {:.5f} Stars".format(player_dict["defenseRating"]*5), value=def_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
     emb.add_field(name="Vibe", value=vib_str, inline=True)
     emb.add_field(name="Other", value=oth_str, inline=True)
@@ -186,24 +194,29 @@ async def add(ctx, opt, tag):
     tag = tag[1:-1]
     if opt == "channel":
         # channel format: #<numbers>
-        tag = tag[1:]
+        tag = int(tag[1:])
         channel = ctx.guild.get_channel(int(tag))
         if channel is None:
             await ctx.send("Please tag a valid channel")
             return
+        if int(tag) in settings[ctx.guild.id]["channels"]:
+            await ctx.send("{0.mention} is already in my approved channels!".format(channel))
+            return
         settings[ctx.guild.id]["channels"].append(int(tag))
         await ctx.send("Added {0.mention} to valid channels!".format(channel))
-        return
     else:
         # role format: @&<numbers>
-        tag = tag[2:]
+        tag = int(tag[2:])
         role = ctx.guild.get_role(int(tag))
         if role is None:
             await ctx.send("Please tag a valid role")
             return
+        if int(tag) in settings[ctx.guild.id]["roles"]:
+            await ctx.send("{0.name} is already in my valid roles!".format(role))
+            return
         settings[ctx.guild.id]["roles"].append(int(tag))
-        await ctx.send("Added {0.mention} to valid roles".format(role))
-        return
+        await ctx.send("Added {0.name} to valid roles".format(role))
+    save_settings(ctx.guild)
     return
 
 
@@ -215,6 +228,30 @@ async def remove(ctx, opt, tag):
     if opt != "channel" and opt != "role":
         await ctx.send("Invalid remove option. Try again with channel or role.")
         return
+    tag = tag[1:-1]
+    if opt == "channel":
+        tag = int(tag[1:])
+        channel = ctx.guild.get_channel(tag)
+        if channel is None:
+            await ctx.send("Please tag a valid channel")
+            return
+        if tag not in settings[ctx.guild.id]["channels"]:
+            await ctx.send("{0.mention} isn't in my approved channel list!".format(channel))
+            return
+        settings[ctx.guild.id]["channels"].remove(tag)
+        await ctx.send("Removed {0.mention} from valid channels!".format(channel))
+    else:
+        tag = int(tag[2:])
+        role = ctx.guild.get_role(tag)
+        if role is None:
+            await ctx.send("Please tag a valid role")
+            return
+        if tag not in settings[ctx.guild.id]["roles"]:
+            await ctx.send("{0.name} isn't in my approved roles list!".format(role))
+            return
+        settings[ctx.guild.id]["roles"].remove(tag)
+        await ctx.send("Removed {0.name} from valid roles!".format(role))
+    save_settings(ctx.guild)
     return
 
 
@@ -235,12 +272,36 @@ async def prefix(ctx, arg):
 
 @config.command()
 async def view(ctx):
-    # TODO: Make an embed or otherwise print out the prefix, channels, roles
+    if not validate_user(ctx.author, ctx.channel, ctx.guild):
+        await ctx.send("You're not an admin!")
+        return
+    guild_settings = settings[ctx.guild.id]
+    guild_prefix = guild_settings["prefix"]
+    guild_channels = ""
+    guild_roles = ""
+    for c in guild_settings["channels"]:
+        channel = ctx.guild.get_channel(c)
+        guild_channels += "{0.mention}\n".format(channel)
+    if guild_channels == "":
+        guild_channels = "None"
+    for r in guild_settings["roles"]:
+        role = ctx.guild.get_role(r)
+        guild_roles += "{0.mention}\n".format(role)
+    if guild_roles == "":
+        guild_roles = "None"
+    emb = discord.Embed(title="Settings for {0.name}".format(ctx.guild))
+    emb.add_field(name="Prefix", value=guild_prefix)
+    emb.add_field(name="Channels", value=guild_channels)
+    emb.add_field(name="Roles", value=guild_roles)
+    await ctx.send(embed=emb)
     return
 
 
 @fk_bot.command(description="print a player's fk stats")
 async def stats(ctx, *, player):
+    if not validate_channel(ctx.channel, ctx.guild):
+        await ctx.send("Can't use this here!")
+        return
     pl_stats = get_player_stats(player)
     emb = None
     if pl_stats is not None:
