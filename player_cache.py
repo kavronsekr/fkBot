@@ -11,16 +11,42 @@ class PlayerCache:
         self.player_map = dict()
         self.player_ids = set()
 
-        self.get_player_ids.start()
+        self.team_cache = dict()
+        self.team_map = dict()
+        self.team_ids = set()
+
+        self.cache_loop.start()
         return
 
+    def is_player(self, player):
+        names = self.player_map.keys()
+        return player.lower() in names
+
+    def is_pid(self, pid):
+        return pid.lower() in self.player_ids
+
+    def is_team(self, team):
+        names = self.team_map.keys()
+        return team.lower() in names
+
+    def is_tid(self, tid):
+        return tid.lower() in self.team_ids
+
     @tasks.loop(seconds=3600)
-    async def get_player_ids(self):
+    async def cache_loop(self):
         async with aiohttp.ClientSession() as session:
             async with session.get('https://blaseball.com/database/allTeams') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
                     for team in data:
+                        team_id = team['id']
+                        self.team_ids.update(team_id)
+                        self.team_map[team['fullName'].lower()] = team_id
+                        self.team_map[team['location'].lower()] = team_id
+                        self.team_map[team['nickname'].lower()] = team_id
+                        self.team_map[team['shorthand'].lower()] = team_id
+                        self.team_cache[team_id] = team
+
                         self.player_ids.update(team['lineup'])
                         self.player_ids.update(team['rotation'])
                         self.player_ids.update(team['bullpen'])
@@ -66,6 +92,14 @@ class PlayerCache:
             return self.player_cache[key]
         elif str(key).lower() in self.player_map.keys():
             return self.player_cache[self.player_map[key.lower()]]
+        else:
+            return None
+
+    def get_team(self, key):
+        if key in self.team_cache.keys():
+            return self.team_cache[key]
+        elif str(key).lower() in self.team_map.keys():
+            return self.team_cache[self.team_map[key.lower()]]
         else:
             return None
 
