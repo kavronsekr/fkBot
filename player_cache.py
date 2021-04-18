@@ -2,6 +2,7 @@ import json
 import aiohttp
 import time
 from discord.ext import tasks
+import sys
 
 
 class PlayerCache:
@@ -34,8 +35,10 @@ class PlayerCache:
     @tasks.loop(seconds=3600)
     async def cache_loop(self):
         print("cache_loop: Spawning ClientSession")
+        sys.stdout.flush()
         async with aiohttp.ClientSession() as session:
             print("cache_loop: Connecting to blaseball")
+            sys.stdout.flush()
             async with session.get('https://blaseball.com/database/allTeams') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
@@ -54,6 +57,7 @@ class PlayerCache:
                         self.player_ids.update(team['bench'])
                 else:
                     print("Bad response " + str(resp.status))
+                    sys.stdout.flush()
                     return
             async with session.get('https://www.blaseball.com/api/getTribute') as resp:
                 if resp.status == 200:
@@ -62,8 +66,10 @@ class PlayerCache:
                         self.player_ids.add(p['playerId'])
                 else:
                     print("Bad response " + str(resp.status))
+                    sys.stdout.flush()
                     return
         print(str(len(self.player_ids)) + " loaded!")
+        sys.stdout.flush()
         await self.form_cache()
         return
 
@@ -86,7 +92,9 @@ class PlayerCache:
                             self.player_cache[pid]['update_time'] = update_time
                     else:
                         print("Bad response " + str(resp.status))
+                        sys.stdout.flush()
         print("Players Cached!")
+        sys.stdout.flush()
 
     def get_player(self, key):
         if key in self.player_cache.keys():

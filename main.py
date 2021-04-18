@@ -5,11 +5,14 @@ from help import HelpCommand
 import datetime
 import random
 import os
+import sys
 
 print("Main: Initializing Cache!")
+sys.stdout.flush()
 cache = PlayerCache()
 
 print("main: Loading bot token!")
+sys.stdout.flush()
 token = os.getenv("DISCORD_BOT_TOKEN")
 
 ping_strings = ['Pong!', ':heartpulse:',
