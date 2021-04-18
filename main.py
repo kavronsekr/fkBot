@@ -3,18 +3,14 @@ from discord.ext import commands
 from player_cache import PlayerCache
 from help import HelpCommand
 import datetime
-import os
 import random
-import json
-import pprint
-
-pp = pprint.PrettyPrinter(indent=4)
+import os
 
 cache = PlayerCache()
 
 token_filename = 'tokens.txt'
 token_file = open(token_filename, 'r')
-token = token_file.readline()
+token = os.getenv("DISCORD_BOT_TOKEN")
 
 ping_strings = ['Pong!', ':heartpulse:',
                 'Taco Baco!', ':eyes:',
@@ -302,13 +298,13 @@ async def compare(ctx, *, arg_str):
     if player1 == "":
         player1, players = quote_parse_player(players)
         if player1 == "":
-            await ctx.send("I couldn't parse that. Double check your category and players for typos, or consult `fk!help compare`!")
+            await ctx.send("I couldn't parse that. Double check your input for typos, or consult `fk!help compare`")
             return
     player2, players = greedy_parse(players, "player")
     if player2 == "":
         player2, players = quote_parse_player(players)
         if player2 == "":
-            await ctx.send("I couldn't parse that. Double check your category and players for typos, or consult `fk!help compare`!")
+            await ctx.send("I couldn't parse that. Double check your input for typos, or consult `fk!help compare`")
             return
     pl1_stats = get_player_stats(player1)
     pl2_stats = get_player_stats(player2)
@@ -338,6 +334,9 @@ async def sort(ctx, *, arg_str):
         await ctx.send("I can't find that team!")
         return
     tokens = rem.split()
+    if not len(tokens):
+        await ctx.send("Invalid query. Please enter a stat after the team!")
+        return
     stat = tokens[0]
     location = None
     if len(tokens) > 1:
