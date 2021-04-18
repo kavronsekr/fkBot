@@ -9,8 +9,7 @@ import sys
 
 print("Main: Initializing Cache!")
 sys.stdout.flush()
-#  cache = PlayerCache()
-cache = None
+cache = PlayerCache()
 
 print("main: Loading bot token!")
 sys.stdout.flush()
