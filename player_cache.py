@@ -33,7 +33,9 @@ class PlayerCache:
 
     @tasks.loop(seconds=3600)
     async def cache_loop(self):
+        print("cache_loop: Spawning ClientSession")
         async with aiohttp.ClientSession() as session:
+            print("cache_loop: Connecting to blaseball")
             async with session.get('https://blaseball.com/database/allTeams') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())

@@ -6,10 +6,10 @@ import datetime
 import random
 import os
 
+print("Main: Initializing Cache!")
 cache = PlayerCache()
 
-token_filename = 'tokens.txt'
-token_file = open(token_filename, 'r')
+print("main: Loading bot token!")
 token = os.getenv("DISCORD_BOT_TOKEN")
 
 ping_strings = ['Pong!', ':heartpulse:',
@@ -236,6 +236,7 @@ def quote_parse_player(arg_str):
     return quote_str, remainder
 
 
+print("main: Starting bot init!")
 fk_bot = commands.Bot(command_prefix="fk!")
 fk_bot.help_command = HelpCommand()
 
@@ -365,5 +366,5 @@ async def sort(ctx, *, arg_str):
         await ctx.send(embed=emb)
     return
 
-
+print("main: Running bot!")
 fk_bot.run(token)
