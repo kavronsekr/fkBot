@@ -67,7 +67,7 @@ def get_stats_str(player_dict, stat_list):
     ret_str = ''
     try:
         for i in stat_list:
-            ret_str += "`{:>20}: {:.5f}`\n".format(i, player_dict[i])
+            ret_str += "`{:>20}: {:.3f}`\n".format(i, player_dict[i])
         return ret_str
     except KeyError:
         return ''
@@ -113,14 +113,14 @@ def print_sorted_team(team, stat, team_map):
 
         if stat != "peanutAllergy":
             stat_total += float(pair[1])
-            stat_str += "{:.5f}\n".format(pair[1])
+            stat_str += "{:.3f}\n".format(pair[1])
         else:
             stat_str += "{}\n".format(pair[1])
     if stat != "peanutAllergy":
         name_str += "\n"
         stat_str += "\n"
         name_str += "Team Average\n"
-        stat_str += "{:.5f}\n".format(stat_total/len(sorted_team))
+        stat_str += "{:.3f}\n".format(stat_total/len(sorted_team))
 
     emb.add_field(name="Player", value=name_str, inline=True)
     emb.add_field(name="{}".format(stat), value=stat_str, inline=True)
@@ -168,15 +168,15 @@ def print_player_comp(category, player1_dict, player2_dict):
                 pl2_val = player2_dict[stat]
                 diff_val = pl2_val - pl1_val
                 if compare_stat(pl1_val, pl2_val, stat):
-                    pl1_string += "\u200B\t**{:.5f}**\n".format(pl1_val)
-                    pl2_string += "\u200B\t{:.5f}\t".format(pl2_val)
+                    pl1_string += "\u200B\t**{:.3f}**\n".format(pl1_val)
+                    pl2_string += "\u200B\t{:.3f}\t".format(pl2_val)
                 elif compare_stat(pl2_val, pl1_val, stat):
-                    pl1_string += "\u200B\t{:.5f}\n".format(pl1_val)
-                    pl2_string += "\u200B\t**{:.5f}**\t".format(pl2_val)
+                    pl1_string += "\u200B\t{:.3f}\n".format(pl1_val)
+                    pl2_string += "\u200B\t**{:.3f}**\t".format(pl2_val)
                 else:
-                    pl1_string += "\u200B\t{:.5f}\n".format(pl1_val)
-                    pl2_string += "\u200B\t{:.5f}\t".format(pl2_val)
-                pl2_string += "\u200B\t({:.5f})\n".format(diff_val)
+                    pl1_string += "\u200B\t{:.3f}\n".format(pl1_val)
+                    pl2_string += "\u200B\t{:.3f}\t".format(pl2_val)
+                pl2_string += "\u200B\t({:.3f})\n".format(diff_val)
         else:
             for stat in stat_list:
                 title_string += "\u200B\t\t{}:\n".format(stat)
