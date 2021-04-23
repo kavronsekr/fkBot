@@ -5,11 +5,14 @@ from help import HelpCommand
 import datetime
 import random
 import os
+import sys
 
+print("Main: Initializing Cache!")
+sys.stdout.flush()
 cache = PlayerCache()
 
-token_filename = 'tokens.txt'
-token_file = open(token_filename, 'r')
+print("main: Loading bot token!")
+sys.stdout.flush()
 token = os.getenv("DISCORD_BOT_TOKEN")
 
 ping_strings = ['Pong!', ':heartpulse:',
@@ -19,20 +22,20 @@ ping_strings = ['Pong!', ':heartpulse:',
                 'Have you fed your hexbugs today?',
                 'Chorby Short! Chorby Tall! Chorby swings at every ball!']
 
-hitting_stats = ['hittingRating',
+hitting_stats = ['trueHitting', 'hittingRating',
                  'divinity', 'martyrdom',
                  'moxie', 'musclitude',
                  'patheticism', 'thwackability',
                  'tragicness']
-pitching_stats = ['pitchingRating',
+pitching_stats = ['truePitching', 'pitchingRating',
                   'coldness', 'overpowerment',
                   'ruthlessness', 'shakespearianism',
                   'suppression', 'unthwackability']
-baserunning_stats = ['baserunningRating',
+baserunning_stats = ['trueBaserunning', 'baserunningRating',
                      'baseThirst', 'continuation',
                      'groundFriction', 'indulgence',
                      'laserlikeness']
-defense_stats = ['defenseRating',
+defense_stats = ['trueDefense', 'defenseRating',
                  'anticapitalism', 'chasiness',
                  'omniscience', 'tenaciousness',
                  'watchfulness']
@@ -64,7 +67,7 @@ def get_stats_str(player_dict, stat_list):
     ret_str = ''
     try:
         for i in stat_list:
-            ret_str += "`{:>17}: {:.5f}`\n".format(i, player_dict[i])
+            ret_str += "`{:>20}: {:.5f}`\n".format(i, player_dict[i])
         return ret_str
     except KeyError:
         return ''
@@ -80,11 +83,15 @@ def print_player_fk(player_dict):
     oth_str = get_stats_str(player_dict, other_stats)
     update_time = datetime.datetime.fromtimestamp(player_dict['update_time']).strftime('%Y-%m-%d %H:%M:%S')
     emb = discord.Embed(title="{} -- {}".format(player_dict['name'], player_dict['id']))
-    emb.add_field(name="Hitting:  {:.5f} Stars".format(player_dict["hittingRating"]*5), value=hit_str, inline=True)
-    emb.add_field(name="Pitching:  {:.5f} Stars".format(player_dict["pitchingRating"]*5), value=pit_str, inline=True)
+    emb.add_field(name="Hitting:  {:.2f} ({:.2f}) Stars".format(
+        player_dict["hittingRating"]*5, player_dict["trueHitting"]*5), value=hit_str, inline=True)
+    emb.add_field(name="Pitching:  {:.2f} ({:.2f}) Stars".format(
+        player_dict["pitchingRating"]*5, player_dict["truePitching"]*5), value=pit_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
-    emb.add_field(name="Baserunning:  {:.5f} Stars".format(player_dict["baserunningRating"]*5), value=run_str, inline=True)
-    emb.add_field(name="Defense:  {:.5f} Stars".format(player_dict["defenseRating"]*5), value=def_str, inline=True)
+    emb.add_field(name="Baserunning:  {:.2f} ({:.2f}) Stars".format(
+        player_dict["baserunningRating"]*5, player_dict["trueBaserunning"]*5), value=run_str, inline=True)
+    emb.add_field(name="Defense:  {:.2f} ({:.2f}) Stars".format(
+        player_dict["defenseRating"]*5, player_dict["trueDefense"]*5), value=def_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
     emb.add_field(name="Vibe", value=vib_str, inline=True)
     emb.add_field(name="Other", value=oth_str, inline=True)
@@ -95,7 +102,7 @@ def print_player_fk(player_dict):
 
 def print_sorted_team(team, stat, team_map):
     err = None
-    sorted_team = sorted(team_map.items(), key=lambda kv:(kv[1], kv[0]))
+    sorted_team = sorted(team_map.items(), key=lambda kv: (kv[1], kv[0]))
     sorted_team.reverse()
     emb = discord.Embed(title="{} by {}".format(team.title(), stat))
     name_str = ""
@@ -238,12 +245,14 @@ def quote_parse_player(arg_str):
     return quote_str, remainder
 
 
+print("main: Starting bot init!")
 fk_bot = commands.Bot(command_prefix="fk!")
 fk_bot.help_command = HelpCommand()
 
 
 @fk_bot.event
 async def on_ready():
+    await fk_bot.change_presence(activity=discord.Game(name="fk!help"))
     print('log in as {0.user}'.format(fk_bot))
 
 
@@ -368,4 +377,16 @@ async def sort(ctx, *, arg_str):
     return
 
 
+@fk_bot.command(description="Update a player's cache",
+                usage="player",
+                help="Updates the cached information for a player.\n" +
+                     "Players can be specified by name or id, case insensitive.\n" +
+                     "The command will fail if the player has been updated within the last minute.",
+                brief="Update player")
+async def update(ctx, *, arg_str):
+    ret_str = await cache.update_player(arg_str.lower())
+    await ctx.send(ret_str)
+    return
+
+print("main: Running bot!")
 fk_bot.run(token)

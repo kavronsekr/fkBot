@@ -4,6 +4,33 @@ import time
 from discord.ext import tasks
 
 
+def add_true_ratings(player_dict):
+    term1 = 1 - player_dict["tragicness"]
+    term2 = 1 - player_dict["patheticism"]
+    term3 = player_dict["thwackability"] * player_dict["divinity"]
+    term4 = player_dict["moxie"] * player_dict["musclitude"]
+    term5 = player_dict["martyrdom"]
+    true_rating = pow(term1, 0.01) * pow(term2, 0.05) * pow(term3, 0.35) * pow(term4, 0.075) * pow(term5, 0.02)
+    player_dict["trueHitting"] = true_rating
+    term1 = player_dict["unthwackability"]
+    term2 = player_dict["ruthlessness"]
+    term3 = player_dict["overpowerment"]
+    term4 = player_dict["shakespearianism"]
+    term5 = player_dict["coldness"]
+    true_rating = pow(term1, 0.5) * pow(term2, 0.4) * pow(term3, 0.15) * pow(term4, 0.1) * pow(term5, 0.025)
+    player_dict["truePitching"] = true_rating
+    term1 = player_dict["laserlikeness"]
+    term2 = player_dict["baseThirst"] * player_dict["continuation"] * player_dict["groundFriction"] * player_dict[
+        "indulgence"]
+    true_rating = pow(term1, 0.5) * pow(term2, 0.1)
+    player_dict["trueBaserunning"] = true_rating
+    term1 = player_dict["omniscience"] * player_dict["tenaciousness"]
+    term2 = player_dict["watchfulness"] * player_dict["anticapitalism"] * player_dict["chasiness"]
+    true_rating = pow(term1, 0.2) * pow(term2, 0.1)
+    player_dict["trueDefense"] = true_rating
+    return
+
+
 class PlayerCache:
     def __init__(self):
         self.player_cache = dict()
@@ -33,7 +60,9 @@ class PlayerCache:
 
     @tasks.loop(seconds=3600)
     async def cache_loop(self):
+        print("cache_loop: Spawning ClientSession")
         async with aiohttp.ClientSession() as session:
+            print("cache_loop: Connecting to blaseball/sibr")
             async with session.get('https://blaseball.com/database/allTeams') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
@@ -46,18 +75,19 @@ class PlayerCache:
                         self.team_map[team['shorthand'].lower()] = team_id
                         self.team_cache[team_id] = team
 
-                        self.player_ids.update(team['lineup'])
-                        self.player_ids.update(team['rotation'])
-                        self.player_ids.update(team['bullpen'])
-                        self.player_ids.update(team['bench'])
+#                        self.player_ids.update(team['lineup'])
+#                        self.player_ids.update(team['rotation'])
+#                        self.player_ids.update(team['bullpen'])
+#                        self.player_ids.update(team['bench'])
                 else:
                     print("Bad response " + str(resp.status))
                     return
-            async with session.get('https://www.blaseball.com/api/getTribute') as resp:
+            async with session.get('https://api.sibr.dev/chronicler/v1/players/names') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
-                    for p in data:
-                        self.player_ids.add(p['playerId'])
+                    for pid, name in data.items():
+                        self.player_ids.add(pid)
+                        self.player_map[name.lower()] = pid
                 else:
                     print("Bad response " + str(resp.status))
                     return
@@ -67,8 +97,10 @@ class PlayerCache:
 
     async def form_cache(self, players=None):
         if players is None:
-            players = self.player_ids
-        plist = list(players)
+            plist = list(self.player_ids)
+        else:
+            plist = list()
+            plist.append(players)
         async with aiohttp.ClientSession() as session:
             for split_list in [plist[i:i + 100] for i in range(0, len(plist), 100)]:
                 req_str = ','.join(split_list)
@@ -78,12 +110,12 @@ class PlayerCache:
                         update_time = int(time.time())
                         for p in data:
                             pid = p['id']
-                            lc_name = p['name'].lower()
-                            self.player_map[lc_name] = pid
+                            add_true_ratings(p)
                             self.player_cache[pid] = p
                             self.player_cache[pid]['update_time'] = update_time
                     else:
                         print("Bad response " + str(resp.status))
+                        return
         print("Players Cached!")
 
     def get_player(self, key):
@@ -108,9 +140,12 @@ class PlayerCache:
             player_name = self.player_cache[key]['name']
         elif key in self.player_map.keys():
             player_id = self.player_map[key]
-            player_name = key
+            player_name = self.player_cache[player_id]['name']
         else:
             return "I couldn't find that player! If they were just hatched, it'll take me some time to find them..."
-        await self.form_cache(player_id)
+        cur_time = int(time.time())
+        if (cur_time - self.player_cache[player_id]["update_time"]) < 60:
+            return "I've updated this player within the last minute!"
+        await self.form_cache(players=player_id)
         return "Updated the data for {}!".format(player_name)
 
