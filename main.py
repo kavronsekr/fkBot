@@ -17,25 +17,25 @@ token = os.getenv("DISCORD_BOT_TOKEN")
 
 ping_strings = ['Pong!', ':heartpulse:',
                 'Taco Baco!', ':eyes:',
-                ':ping_pong:', 'bb!love',
+                ':ping_pong:', 'bb!love (pretend blasebot responds here :point_down:)',
                 'Thomas Dracaena hit a ground out to Edric Tosser',
                 'Have you fed your hexbugs today?',
                 'Chorby Short! Chorby Tall! Chorby swings at every ball!']
 
-hitting_stats = ['hittingRating',
+hitting_stats = ['trueHitting', 'hittingRating',
                  'divinity', 'martyrdom',
                  'moxie', 'musclitude',
                  'patheticism', 'thwackability',
                  'tragicness']
-pitching_stats = ['pitchingRating',
+pitching_stats = ['truePitching', 'pitchingRating',
                   'coldness', 'overpowerment',
                   'ruthlessness', 'shakespearianism',
                   'suppression', 'unthwackability']
-baserunning_stats = ['baserunningRating',
+baserunning_stats = ['trueBaserunning', 'baserunningRating',
                      'baseThirst', 'continuation',
                      'groundFriction', 'indulgence',
                      'laserlikeness']
-defense_stats = ['defenseRating',
+defense_stats = ['trueDefense', 'defenseRating',
                  'anticapitalism', 'chasiness',
                  'omniscience', 'tenaciousness',
                  'watchfulness']
@@ -67,7 +67,7 @@ def get_stats_str(player_dict, stat_list):
     ret_str = ''
     try:
         for i in stat_list:
-            ret_str += "`{:>17}: {:.5f}`\n".format(i, player_dict[i])
+            ret_str += "`{:>20}: {:.5f}`\n".format(i, player_dict[i])
         return ret_str
     except KeyError:
         return ''
@@ -83,11 +83,15 @@ def print_player_fk(player_dict):
     oth_str = get_stats_str(player_dict, other_stats)
     update_time = datetime.datetime.fromtimestamp(player_dict['update_time']).strftime('%Y-%m-%d %H:%M:%S')
     emb = discord.Embed(title="{} -- {}".format(player_dict['name'], player_dict['id']))
-    emb.add_field(name="Hitting:  {:.5f} Stars".format(player_dict["hittingRating"]*5), value=hit_str, inline=True)
-    emb.add_field(name="Pitching:  {:.5f} Stars".format(player_dict["pitchingRating"]*5), value=pit_str, inline=True)
+    emb.add_field(name="Hitting:  {:.2f} ({:.2f}) Stars".format(
+        player_dict["hittingRating"]*5, player_dict["trueHitting"]*5), value=hit_str, inline=True)
+    emb.add_field(name="Pitching:  {:.2f} ({:.2f}) Stars".format(
+        player_dict["pitchingRating"]*5, player_dict["truePitching"]*5), value=pit_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
-    emb.add_field(name="Baserunning:  {:.5f} Stars".format(player_dict["baserunningRating"]*5), value=run_str, inline=True)
-    emb.add_field(name="Defense:  {:.5f} Stars".format(player_dict["defenseRating"]*5), value=def_str, inline=True)
+    emb.add_field(name="Baserunning:  {:.2f} ({:.2f}) Stars".format(
+        player_dict["baserunningRating"]*5, player_dict["trueBaserunning"]*5), value=run_str, inline=True)
+    emb.add_field(name="Defense:  {:.2f} ({:.2f}) Stars".format(
+        player_dict["defenseRating"]*5, player_dict["trueDefense"]*5), value=def_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
     emb.add_field(name="Vibe", value=vib_str, inline=True)
     emb.add_field(name="Other", value=oth_str, inline=True)
@@ -188,6 +192,12 @@ def print_player_comp(category, player1_dict, player2_dict):
     return err, emb
 
 
+def print_player_diff(category, player1_dict, player2_dict):
+    err = None
+    emb = discord.Embed()
+    return err, emb
+
+
 def get_player_stats(arg_str):
     player = cache.get_player(arg_str)
     return player
@@ -246,6 +256,7 @@ fk_bot.help_command = HelpCommand()
 
 @fk_bot.event
 async def on_ready():
+    await fk_bot.change_presence(activity=discord.Game(name="fk!help"))
     print('log in as {0.user}'.format(fk_bot))
 
 

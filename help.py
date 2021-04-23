@@ -17,7 +17,7 @@ class HelpCommand(commands.HelpCommand):
                         unique_signatures.append(c)
                 channel = self.get_destination()
                 intro_str = "Here are my valid commands!\n\t"
-                outro_str = "\nUse `fk!help <command>` to get more info."
+                outro_str = "\nUse `fk!help <command>` to get more info.\n\nEden created by kavron#8663."
                 commands_str = "\n\t".join(unique_signatures)
                 await channel.send("{}{}{}".format(intro_str, commands_str, outro_str))
         return

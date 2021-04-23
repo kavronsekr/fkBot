@@ -5,6 +5,33 @@ from discord.ext import tasks
 import sys
 
 
+def add_true_ratings(player_dict):
+    term1 = 1 - player_dict["tragicness"]
+    term2 = 1 - player_dict["patheticism"]
+    term3 = player_dict["thwackability"] * player_dict["divinity"]
+    term4 = player_dict["moxie"] * player_dict["musclitude"]
+    term5 = player_dict["martyrdom"]
+    true_rating = pow(term1, 0.01) * pow(term2, 0.05) * pow(term3, 0.35) * pow(term4, 0.075) * pow(term5, 0.02)
+    player_dict["trueHitting"] = true_rating
+    term1 = player_dict["unthwackability"]
+    term2 = player_dict["ruthlessness"]
+    term3 = player_dict["overpowerment"]
+    term4 = player_dict["shakespearianism"]
+    term5 = player_dict["coldness"]
+    true_rating = pow(term1, 0.5) * pow(term2, 0.4) * pow(term3, 0.15) * pow(term4, 0.1) * pow(term5, 0.025)
+    player_dict["truePitching"] = true_rating
+    term1 = player_dict["laserlikeness"]
+    term2 = player_dict["baseThirst"] * player_dict["continuation"] * player_dict["groundFriction"] * player_dict[
+        "indulgence"]
+    true_rating = pow(term1, 0.5) * pow(term2, 0.1)
+    player_dict["trueBaserunning"] = true_rating
+    term1 = player_dict["omniscience"] * player_dict["tenaciousness"]
+    term2 = player_dict["watchfulness"] * player_dict["anticapitalism"] * player_dict["chasiness"]
+    true_rating = pow(term1, 0.2) * pow(term2, 0.1)
+    player_dict["trueDefense"] = true_rating
+    return
+
+
 class PlayerCache:
     def __init__(self):
         self.player_cache = dict()
@@ -86,6 +113,7 @@ class PlayerCache:
                         update_time = int(time.time())
                         for p in data:
                             pid = p['id']
+                            add_true_ratings(p)
                             lc_name = p['name'].lower()
                             self.player_map[lc_name] = pid
                             self.player_cache[pid] = p
