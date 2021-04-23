@@ -14,7 +14,7 @@ token = os.getenv("DISCORD_BOT_TOKEN")
 
 ping_strings = ['Pong!', ':heartpulse:',
                 'Taco Baco!', ':eyes:',
-                ':ping_pong:', 'bb!love',
+                ':ping_pong:',
                 'Thomas Dracaena hit a ground out to Edric Tosser',
                 'Have you fed your hexbugs today?',
                 'Chorby Short! Chorby Tall! Chorby swings at every ball!']
