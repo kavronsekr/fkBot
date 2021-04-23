@@ -78,19 +78,20 @@ class PlayerCache:
                         self.team_map[team['shorthand'].lower()] = team_id
                         self.team_cache[team_id] = team
 
-                        self.player_ids.update(team['lineup'])
-                        self.player_ids.update(team['rotation'])
-                        self.player_ids.update(team['bullpen'])
-                        self.player_ids.update(team['bench'])
+#                        self.player_ids.update(team['lineup'])
+#                        self.player_ids.update(team['rotation'])
+#                        self.player_ids.update(team['bullpen'])
+#                        self.player_ids.update(team['bench'])
                 else:
                     print("Bad response " + str(resp.status))
                     sys.stdout.flush()
                     return
-            async with session.get('https://www.blaseball.com/api/getTribute') as resp:
+            async with session.get('https://api.sibr.dev/chronicler/v1/players/names') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
-                    for p in data:
-                        self.player_ids.add(p['playerId'])
+                    for pid, name in data.items():
+                        self.player_ids.add(pid)
+                        self.player_map[name.lower()] = pid
                 else:
                     print("Bad response " + str(resp.status))
                     sys.stdout.flush()
@@ -114,8 +115,6 @@ class PlayerCache:
                         for p in data:
                             pid = p['id']
                             add_true_ratings(p)
-                            lc_name = p['name'].lower()
-                            self.player_map[lc_name] = pid
                             self.player_cache[pid] = p
                             self.player_cache[pid]['update_time'] = update_time
                     else:

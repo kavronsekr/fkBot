@@ -102,7 +102,7 @@ def print_player_fk(player_dict):
 
 def print_sorted_team(team, stat, team_map):
     err = None
-    sorted_team = sorted(team_map.items(), key=lambda kv:(kv[1], kv[0]))
+    sorted_team = sorted(team_map.items(), key=lambda kv: (kv[1], kv[0]))
     sorted_team.reverse()
     emb = discord.Embed(title="{} by {}".format(team.title(), stat))
     name_str = ""
