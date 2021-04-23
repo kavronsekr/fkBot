@@ -2,7 +2,6 @@ import json
 import aiohttp
 import time
 from discord.ext import tasks
-import sys
 
 
 def add_true_ratings(player_dict):
@@ -62,10 +61,8 @@ class PlayerCache:
     @tasks.loop(seconds=3600)
     async def cache_loop(self):
         print("cache_loop: Spawning ClientSession")
-        sys.stdout.flush()
         async with aiohttp.ClientSession() as session:
-            print("cache_loop: Connecting to blaseball")
-            sys.stdout.flush()
+            print("cache_loop: Connecting to blaseball/sibr")
             async with session.get('https://blaseball.com/database/allTeams') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
@@ -84,7 +81,6 @@ class PlayerCache:
 #                        self.player_ids.update(team['bench'])
                 else:
                     print("Bad response " + str(resp.status))
-                    sys.stdout.flush()
                     return
             async with session.get('https://api.sibr.dev/chronicler/v1/players/names') as resp:
                 if resp.status == 200:
@@ -94,17 +90,17 @@ class PlayerCache:
                         self.player_map[name.lower()] = pid
                 else:
                     print("Bad response " + str(resp.status))
-                    sys.stdout.flush()
                     return
         print(str(len(self.player_ids)) + " loaded!")
-        sys.stdout.flush()
         await self.form_cache()
         return
 
     async def form_cache(self, players=None):
         if players is None:
-            players = self.player_ids
-        plist = list(players)
+            plist = list(self.player_ids)
+        else:
+            plist = list()
+            plist.append(players)
         async with aiohttp.ClientSession() as session:
             for split_list in [plist[i:i + 100] for i in range(0, len(plist), 100)]:
                 req_str = ','.join(split_list)
@@ -119,9 +115,8 @@ class PlayerCache:
                             self.player_cache[pid]['update_time'] = update_time
                     else:
                         print("Bad response " + str(resp.status))
-                        sys.stdout.flush()
+                        return
         print("Players Cached!")
-        sys.stdout.flush()
 
     def get_player(self, key):
         if key in self.player_cache.keys():
@@ -145,9 +140,12 @@ class PlayerCache:
             player_name = self.player_cache[key]['name']
         elif key in self.player_map.keys():
             player_id = self.player_map[key]
-            player_name = key
+            player_name = self.player_cache[player_id]['name']
         else:
             return "I couldn't find that player! If they were just hatched, it'll take me some time to find them..."
-        await self.form_cache(player_id)
+        cur_time = int(time.time())
+        if (cur_time - self.player_cache[player_id]["update_time"]) < 60:
+            return "I've updated this player within the last minute!"
+        await self.form_cache(players=player_id)
         return "Updated the data for {}!".format(player_name)
 

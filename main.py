@@ -192,12 +192,6 @@ def print_player_comp(category, player1_dict, player2_dict):
     return err, emb
 
 
-def print_player_diff(category, player1_dict, player2_dict):
-    err = None
-    emb = discord.Embed()
-    return err, emb
-
-
 def get_player_stats(arg_str):
     player = cache.get_player(arg_str)
     return player
@@ -378,6 +372,18 @@ async def sort(ctx, *, arg_str):
     err, emb = print_sorted_team(team_cache["fullName"], stat, stat_map)
     if not err:
         await ctx.send(embed=emb)
+    return
+
+
+@fk_bot.command(description="Update a player's cache",
+                usage="player",
+                help="Updates the cached information for a player.\n" +
+                     "Players can be specified by name or id, case insensitive.\n" +
+                     "The command will fail if the player has been updated within the last minute.",
+                brief="Update player")
+async def update(ctx, *, arg_str):
+    ret_str = await cache.update_player(arg_str.lower())
+    await ctx.send(ret_str)
     return
 
 print("main: Running bot!")
