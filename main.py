@@ -159,15 +159,17 @@ def print_player_comp(category, player1_dict, player2_dict):
                 title_string += "\u200B\t\t{}:\n".format(stat)
                 pl1_val = player1_dict[stat]
                 pl2_val = player2_dict[stat]
+                diff_val = pl2_val - pl1_val
                 if compare_stat(pl1_val, pl2_val, stat):
                     pl1_string += "\u200B\t**{:.5f}**\n".format(pl1_val)
-                    pl2_string += "\u200B\t{:.5f}\n".format(pl2_val)
+                    pl2_string += "\u200B\t{:.5f}\t".format(pl2_val)
                 elif compare_stat(pl2_val, pl1_val, stat):
                     pl1_string += "\u200B\t{:.5f}\n".format(pl1_val)
-                    pl2_string += "\u200B\t**{:.5f}**\n".format(pl2_val)
+                    pl2_string += "\u200B\t**{:.5f}**\t".format(pl2_val)
                 else:
                     pl1_string += "\u200B\t{:.5f}\n".format(pl1_val)
-                    pl2_string += "\u200B\t{:.5f}\n".format(pl2_val)
+                    pl2_string += "\u200B\t{:.5f}\t".format(pl2_val)
+                pl2_string += "\u200B\t({:.5f})\n".format(diff_val)
         else:
             for stat in stat_list:
                 title_string += "\u200B\t\t{}:\n".format(stat)
