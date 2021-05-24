@@ -113,6 +113,8 @@ class PlayerCache:
                             add_true_ratings(p)
                             self.player_cache[pid] = p
                             self.player_cache[pid]['update_time'] = update_time
+                            if 'unscatteredName' in p['state'].keys():
+                                self.player_map[p['state']['unscatteredName'].lower()] = pid
                     else:
                         print("Bad response " + str(resp.status))
                         return
@@ -134,7 +136,11 @@ class PlayerCache:
         else:
             return None
 
+    def get_cache(self):  # Ok, but why would you do this.
+        return self.player_cache
+
     async def update_player(self, key):
+        key = key.lower()
         if key in self.player_cache.keys():
             player_id = key
             player_name = self.player_cache[key]['name']

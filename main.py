@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from player_cache import PlayerCache
 from help import HelpCommand
+import math
 import datetime
 import random
 import os
@@ -62,6 +63,8 @@ location_map = {"lineup": ["lineup"],
                 "shadows": ["bullpen", "bench"],
                 "all": ["lineup", "rotation", "bullpen", "bench"]}
 
+similar_index = ['hitting', 'pitching', 'baserunning', 'defense', 'all']
+
 
 def get_stats_str(player_dict, stat_list):
     ret_str = ''
@@ -96,7 +99,7 @@ def print_player_fk(player_dict):
     emb.add_field(name="Vibe", value=vib_str, inline=True)
     emb.add_field(name="Other", value=oth_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
-    emb.set_footer(text="Last Updated: {} PST".format(update_time))
+    emb.set_footer(text="Last Updated: {}Z".format(update_time))
     return err, emb
 
 
@@ -245,6 +248,123 @@ def quote_parse_player(arg_str):
     return quote_str, remainder
 
 
+def calculate_rmse_dict(cat, player_cache, mod):
+    full_cache = cache.get_cache()
+    rms_dict = {}
+    for pid, val in full_cache.items():
+        if val["name"] == player_cache["name"]:
+            continue  # don't compare against self
+        if val["leagueTeamId"] is None or val["leagueTeamId"] == "c6c01051-cdd4-47d6-8a98-bb5b754f937f":
+            continue  # don't compare to Hall Stars or Tournament Teams
+        if "REPLICA" in val["permAttr"]:
+            continue  # don't compare to replicas
+        counter = 0
+        total = 0
+        if cat == "hitting" or cat == "all":
+            for stat in hitting_stats:
+                if stat == "trueHitting" or stat == "hittingRating":
+                    continue
+                if stat == "patheticism" or stat == "tragicness":
+                    stat_val = player_cache[stat] - mod
+                    if stat_val > 0.999:
+                        stat_val = 0.999
+                else:
+                    stat_val = player_cache[stat] + mod
+                if stat_val < 0.001:
+                    stat_val = 0.001
+                total += (stat_val - val[stat]) ** 2
+                counter += 1
+        if cat == "pitching" or cat == "all":
+            for stat in pitching_stats:
+                if stat == "truePitching" or stat == "pitchingRating":
+                    continue
+                stat_val = player_cache[stat] + mod
+                if stat_val < 0.001:
+                    stat_val = 0.001
+                total += (stat_val - val[stat]) ** 2
+                counter += 1
+        if cat == "baserunning" or cat == "all":
+            for stat in baserunning_stats:
+                if stat == "trueBaserunning" or stat == "baserunningRating":
+                    continue
+                stat_val = player_cache[stat] + mod
+                if stat_val < 0.001:
+                    stat_val = 0.001
+                total += (stat_val - val[stat]) ** 2
+                counter += 1
+        if cat == "defense" or cat == "all":
+            for stat in defense_stats:
+                if stat == "trueDefense" or stat == "defenseRating":
+                    continue
+                stat_val = player_cache[stat] + mod
+                if stat_val < 0.001:
+                    stat_val = 0.001
+                total += (stat_val - val[stat]) ** 2
+                counter += 1
+        rms_dict[val["name"]] = math.sqrt(total / counter)
+    return rms_dict
+
+
+def form_update_summary(old, new):
+    hit_str = ""
+    pit_str = ""
+    brn_str = ""
+    def_str = ""
+    vib_str = ""
+    oth_str = ""
+    if old is not None and new is not None:
+        for stat in hitting_stats:
+            diff = new[stat] - old[stat]
+            if diff < 0:
+                hit_str += "{}: {:.3f}\n".format(stat, diff)
+            elif diff > 0:
+                hit_str += "{}: +{:.3f}\n".format(stat, diff)
+        for stat in pitching_stats:
+            diff = new[stat] - old[stat]
+            if diff < 0:
+                pit_str += "{}: {:.3f}\n".format(stat, diff)
+            elif diff > 0:
+                pit_str += "{}: +{:.3f}\n".format(stat, diff)
+        for stat in baserunning_stats:
+            diff = new[stat] - old[stat]
+            if diff < 0:
+                brn_str += "{}: {:.3f}\n".format(stat, diff)
+            elif diff > 0:
+                brn_str += "{}: +{:.3f}\n".format(stat, diff)
+        for stat in defense_stats:
+            diff = new[stat] - old[stat]
+            if diff < 0:
+                def_str += "{}: {:.3f}\n".format(stat, diff)
+            elif diff > 0:
+                def_str += "{}: +{:.3f}\n".format(stat, diff)
+        for stat in vibe_stats:
+            diff = new[stat] - old[stat]
+            if diff < 0:
+                vib_str += "{}: {:.3f}\n".format(stat, diff)
+            elif diff > 0:
+                vib_str += "{}: +{:.3f}\n".format(stat, diff)
+        for stat in other_stats:
+            diff = new[stat] - old[stat]
+            if diff < 0:
+                oth_str += "{}: {:.3f}\n".format(stat, diff)
+            elif diff > 0:
+                oth_str += "{}: +{:.3f}\n".format(stat, diff)
+    summary = ""
+    if not hit_str == "":
+        summary += "Hitting Changes:\n{}\n".format(hit_str)
+    if not pit_str == "":
+        summary += "Pitching Changes:\n{}\n".format(pit_str)
+    if not brn_str == "":
+        summary += "Baserunning Changes:\n{}\n".format(brn_str)
+    if not def_str == "":
+        summary += "Defense Changes:\n{}\n".format(def_str)
+    if not hit_str == "":
+        summary += "Vibe Changes:\n{}\n".format(vib_str)
+    if not oth_str == "":
+        summary += "Other Changes:\n{}\n".format(oth_str)
+    return summary
+
+
 print("main: Starting bot init!")
 fk_bot = commands.Bot(command_prefix="fk!")
 fk_bot.help_command = HelpCommand()
@@ -377,6 +497,63 @@ async def sort(ctx, *, arg_str):
     return
 
 
+@fk_bot.command(aliases=["sim"],
+                description="Find the five most similar players to another player, based on a stat group",
+                usage="group player [stat offset]",
+                help="Calculates the deviation between a player and all other players and returns the five most"
+                     "similar.\nThe comparison is done on one of the major stat categories:\n"
+                     "\tHitting, Pitching, Baserunning, Defense, or All.\n"
+                     "The deviation is calculated by finding the Root Mean Square of all of the stats within the "
+                     "category except for the star ratings (true and inflated)."
+                     "A stat offset can be optionally added to all of the source player's stats, with a stat floor of "
+                     "0.001.\n"
+                     "This offset will be subtracted from patheticism and tragicness instead, and capped at 0.999 for"
+                     "these two stats.",
+                brief="Find similar players")
+async def similar(ctx, *, arg_str):
+    arg_list = arg_str.split(maxsplit=1)
+    if len(arg_list) < 2:
+        await ctx.send("Not enough arguments specified! Remember to specify a group and a player!")
+        return
+    cat = arg_list[0]
+    cat = cat.lower()
+    arg_str = arg_list[1]
+    if cat == "batting":
+        cat = "hitting"
+    if cat not in similar_index:
+        await ctx.send("I didn't recognize that group. Valid groups are `hitting`, `pitching`, `baserunning`, `defense`"
+                       ", or `all`")
+        return
+    player, mod_str = greedy_parse(arg_str, "player")
+    if not cache.is_player(player):
+        await ctx.send("I couldn't find that player!")
+        return
+    mod = 0
+    if not mod_str == "":
+        try:
+            mod = float(mod_str)
+        except ValueError:
+            await ctx.send("I couldn't parse your stat modifier ({}). Treating it as 0!".format(mod_str))
+
+    player_cache = cache.get_player(player)
+    rms_dict = calculate_rmse_dict(cat, player_cache, mod)
+
+    sorted_results = sorted(rms_dict.items(), key=lambda item: item[1])
+
+    emb = discord.Embed(title="Similar Players to {} : {}".format(player_cache["name"], cat.title()))
+    if mod:
+        emb.description = "Applied a modifier of {} to all of {}'s stats!".format(mod, player_cache["name"])
+    name_str = ""
+    rms_str = ""
+    for top in sorted_results[0:5]:
+        name_str += "{}\n".format(top[0])
+        rms_str += "{:.5f}\n".format(top[1])
+    emb.add_field(name="Player", value=name_str, inline=True)
+    emb.add_field(name="Deviation", value=rms_str, inline=True)
+    await ctx.send(embed=emb)
+    return
+
+
 @fk_bot.command(description="Update a player's cache",
                 usage="player",
                 help="Updates the cached information for a player.\n" +
@@ -384,9 +561,17 @@ async def sort(ctx, *, arg_str):
                      "The command will fail if the player has been updated within the last minute.",
                 brief="Update player")
 async def update(ctx, *, arg_str):
-    ret_str = await cache.update_player(arg_str.lower())
+    old_cache = cache.get_player(arg_str)
+    ret_str = await cache.update_player(arg_str)
+    new_cache = cache.get_player(arg_str)
+
+    summary = form_update_summary(old_cache, new_cache)
+
     await ctx.send(ret_str)
+    if not summary == "":
+        await ctx.send("Summary of changes:\n\n{}".format(summary))
     return
+
 
 print("main: Running bot!")
 fk_bot.run(token)
