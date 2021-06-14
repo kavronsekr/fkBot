@@ -57,11 +57,9 @@ comparison_keys = {"offensive": "h b", "defensive": "p d",
 
 location_map = {"lineup": ["lineup"],
                 "rotation": ["rotation"],
-                "bullpen": ["bullpen"],
-                "bench": ["bench"],
                 "active": ["lineup", "rotation"],
-                "shadows": ["bullpen", "bench"],
-                "all": ["lineup", "rotation", "bullpen", "bench"]}
+                "shadows": ["shadows"],
+                "all": ["lineup", "rotation", "shadows"]}
 
 similar_index = ['hitting', 'pitching', 'baserunning', 'defense', 'all']
 
@@ -455,7 +453,7 @@ async def compare(ctx, *, arg_str):
                      "The stat _is_ case sensitive and must be presented in the format specified in the site JSON.\n" +
                      "\tFor quicker reference, the stats can also be found in a stats query (`fk!stats`)\n" +
                      "A location can also be specified to narrow down which players are displayed.\n" +
-                     "\tValid options are `lineup`, `rotation`, `bullpen`, `bench`, `active`, `shadows`, or `all`." +
+                     "\tValid options are `lineup`, `rotation`, `active`, `shadows`, or `all`." +
                      "\tIf no location is supplied, all of a team's players will be sorted.",
                 brief="Sort a team's players")
 async def sort(ctx, *, arg_str):
@@ -488,6 +486,9 @@ async def sort(ctx, *, arg_str):
     stat_map = dict()
     for p in players:
         player_dict = cache.get_player(p)
+        if player_dict is None:
+            print("Couldn't find player {}".format(p))
+            continue
         player_name = player_dict["name"]
         player_stat = player_dict[stat]
         stat_map[player_name] = player_stat
@@ -504,11 +505,12 @@ async def sort(ctx, *, arg_str):
                      "similar.\nThe comparison is done on one of the major stat categories:\n"
                      "\tHitting, Pitching, Baserunning, Defense, or All.\n"
                      "The deviation is calculated by finding the Root Mean Square of all of the stats within the "
-                     "category except for the star ratings (true and inflated)."
+                     "category except for the star ratings (true and inflated).\n"
                      "A stat offset can be optionally added to all of the source player's stats, with a stat floor of "
                      "0.001.\n"
                      "This offset will be subtracted from patheticism and tragicness instead, and capped at 0.999 for"
-                     "these two stats.",
+                     "these two stats.\n\nCommon Stat Changes:\nInfuse: 0.20 to 0.40\nSun Dialed: 0.01\n"
+                     "Entering Shadows: 0.04 - 0.09",
                 brief="Find similar players")
 async def similar(ctx, *, arg_str):
     arg_list = arg_str.split(maxsplit=1)

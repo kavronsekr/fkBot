@@ -75,10 +75,10 @@ class PlayerCache:
                         self.team_map[team['shorthand'].lower()] = team_id
                         self.team_cache[team_id] = team
 
-#                        self.player_ids.update(team['lineup'])
-#                        self.player_ids.update(team['rotation'])
-#                        self.player_ids.update(team['bullpen'])
-#                        self.player_ids.update(team['bench'])
+                        self.player_ids.update(team['lineup'])
+                        self.player_ids.update(team['rotation'])
+                        self.player_ids.update(team['shadows'])
+
                 else:
                     print("Bad response " + str(resp.status))
                     return
@@ -113,6 +113,7 @@ class PlayerCache:
                             add_true_ratings(p)
                             self.player_cache[pid] = p
                             self.player_cache[pid]['update_time'] = update_time
+                            self.player_map[p['name'].lower()] = pid
                             if 'unscatteredName' in p['state'].keys():
                                 self.player_map[p['state']['unscatteredName'].lower()] = pid
                     else:
