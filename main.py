@@ -18,9 +18,9 @@ token = os.getenv("DISCORD_BOT_TOKEN")
 
 ping_strings = ['Pong!', ':heartpulse:',
                 'Taco Baco!', ':eyes:',
-                ':ping_pong:',
+                ':ping_pong:', 'Please Imagine Music',
                 'Thomas Dracaena hit a ground out to Edric Tosser',
-                'Have you fed your hexbugs today?',
+                'Have you fed your hexbugs today?', 'The Breath Mints',
                 'Chorby Short! Chorby Tall! Chorby swings at every ball!']
 
 hitting_stats = ['trueHitting', 'hittingRating',
@@ -42,7 +42,7 @@ defense_stats = ['trueDefense', 'defenseRating',
                  'watchfulness']
 vibe_stats = ['buoyancy', 'cinnamon', 'pressurization']
 other_stats = ['totalFingers', 'peanutAllergy',
-               'soul']
+               'soul', 'eDensity', 'evolution']
 all_stats = hitting_stats + pitching_stats + baserunning_stats + defense_stats + vibe_stats + other_stats
 
 # h = hitting, b = baserunning, p = pitching, d = defense, v = vibes, o = other
@@ -68,7 +68,7 @@ def get_stats_str(player_dict, stat_list):
     ret_str = ''
     try:
         for i in stat_list:
-            ret_str += "`{:>20}: {:.3f}`\n".format(i, player_dict[i])
+            ret_str += "`{:>20}: {:.3f}`\n".format(i, player_dict[i.lower()])
         return ret_str
     except KeyError:
         return ''
@@ -85,14 +85,14 @@ def print_player_fk(player_dict):
     update_time = datetime.datetime.fromtimestamp(player_dict['update_time']).strftime('%Y-%m-%d %H:%M:%S')
     emb = discord.Embed(title="{} -- {}".format(player_dict['name'], player_dict['id']))
     emb.add_field(name="Hitting:  {:.2f} ({:.2f}) Stars".format(
-        player_dict["hittingRating"]*5, player_dict["trueHitting"]*5), value=hit_str, inline=True)
+        player_dict["hittingrating"]*5, player_dict["truehitting"]*5), value=hit_str, inline=True)
     emb.add_field(name="Pitching:  {:.2f} ({:.2f}) Stars".format(
-        player_dict["pitchingRating"]*5, player_dict["truePitching"]*5), value=pit_str, inline=True)
+        player_dict["pitchingrating"]*5, player_dict["truepitching"]*5), value=pit_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
     emb.add_field(name="Baserunning:  {:.2f} ({:.2f}) Stars".format(
-        player_dict["baserunningRating"]*5, player_dict["trueBaserunning"]*5), value=run_str, inline=True)
+        player_dict["baserunningrating"]*5, player_dict["truebaserunning"]*5), value=run_str, inline=True)
     emb.add_field(name="Defense:  {:.2f} ({:.2f}) Stars".format(
-        player_dict["defenseRating"]*5, player_dict["trueDefense"]*5), value=def_str, inline=True)
+        player_dict["defenserating"]*5, player_dict["truedefense"]*5), value=def_str, inline=True)
     emb.add_field(name="\u200B", value="\u200B", inline=True)
     emb.add_field(name="Vibe", value=vib_str, inline=True)
     emb.add_field(name="Other", value=oth_str, inline=True)
@@ -165,8 +165,8 @@ def print_player_comp(category, player1_dict, player2_dict):
         if c != "o":
             for stat in stat_list:
                 title_string += "\u200B\t\t{}:\n".format(stat)
-                pl1_val = player1_dict[stat]
-                pl2_val = player2_dict[stat]
+                pl1_val = player1_dict[stat.lower()]
+                pl2_val = player2_dict[stat.lower()]
                 diff_val = pl2_val - pl1_val
                 if compare_stat(pl1_val, pl2_val, stat):
                     pl1_string += "\u200B\t**{:.3f}**\n".format(pl1_val)
@@ -181,8 +181,8 @@ def print_player_comp(category, player1_dict, player2_dict):
         else:
             for stat in stat_list:
                 title_string += "\u200B\t\t{}:\n".format(stat)
-                pl1_val = player1_dict[stat]
-                pl2_val = player2_dict[stat]
+                pl1_val = player1_dict[stat.lower()]
+                pl2_val = player2_dict[stat.lower()]
                 pl1_string += "\u200B\t{}\n".format(pl1_val)
                 pl2_string += "\u200B\t{}\n".format(pl2_val)
         title_string += "\u200B\n"
@@ -252,9 +252,9 @@ def calculate_rmse_dict(cat, player_cache, mod):
     for pid, val in full_cache.items():
         if val["name"] == player_cache["name"]:
             continue  # don't compare against self
-        if val["leagueTeamId"] is None or val["leagueTeamId"] == "c6c01051-cdd4-47d6-8a98-bb5b754f937f":
+        if val["leagueteamid"] is None or val["leagueteamid"] == "c6c01051-cdd4-47d6-8a98-bb5b754f937f":
             continue  # don't compare to Hall Stars or Tournament Teams
-        if "REPLICA" in val["permAttr"]:
+        if "REPLICA" in val["permattr"]:
             continue  # don't compare to replicas
         counter = 0
         total = 0
@@ -263,104 +263,98 @@ def calculate_rmse_dict(cat, player_cache, mod):
                 if stat == "trueHitting" or stat == "hittingRating":
                     continue
                 if stat == "patheticism" or stat == "tragicness":
-                    stat_val = player_cache[stat] - mod
+                    stat_val = player_cache[stat.lower()] - mod
                     if stat_val > 0.999:
                         stat_val = 0.999
                 else:
-                    stat_val = player_cache[stat] + mod
+                    stat_val = player_cache[stat.lower()] + mod
                 if stat_val < 0.001:
                     stat_val = 0.001
-                total += (stat_val - val[stat]) ** 2
+                total += (stat_val - val[stat.lower()]) ** 2
                 counter += 1
         if cat == "pitching" or cat == "all":
             for stat in pitching_stats:
                 if stat == "truePitching" or stat == "pitchingRating":
                     continue
-                stat_val = player_cache[stat] + mod
+                stat_val = player_cache[stat.lower()] + mod
                 if stat_val < 0.001:
                     stat_val = 0.001
-                total += (stat_val - val[stat]) ** 2
+                total += (stat_val - val[stat.lower()]) ** 2
                 counter += 1
         if cat == "baserunning" or cat == "all":
             for stat in baserunning_stats:
                 if stat == "trueBaserunning" or stat == "baserunningRating":
                     continue
-                stat_val = player_cache[stat] + mod
+                stat_val = player_cache[stat.lower()] + mod
                 if stat_val < 0.001:
                     stat_val = 0.001
-                total += (stat_val - val[stat]) ** 2
+                total += (stat_val - val[stat.lower()]) ** 2
                 counter += 1
         if cat == "defense" or cat == "all":
             for stat in defense_stats:
                 if stat == "trueDefense" or stat == "defenseRating":
                     continue
-                stat_val = player_cache[stat] + mod
+                stat_val = player_cache[stat.lower()] + mod
                 if stat_val < 0.001:
                     stat_val = 0.001
-                total += (stat_val - val[stat]) ** 2
+                total += (stat_val - val[stat.lower()]) ** 2
                 counter += 1
         rms_dict[val["name"]] = math.sqrt(total / counter)
     return rms_dict
 
 
+def update_str_helper(new, old, stats):
+    ret_str = ""
+    change = False
+    for stat in stats:
+        lstat = stat.lower()
+        diff = new[lstat] - old[lstat]
+        if diff < 0:
+            ret_str += "`{:>20}: {:.3f} ({:.3f})`\n".format(stat, new[lstat], diff)
+            change = True
+        elif diff > 0:
+            ret_str += "`{:>20}: {:.3f} ({:.3f})`\n".format(stat, new[lstat], diff)
+            change = True
+        else:
+            ret_str += "`{:>20}: {:.3f}`\n".format(stat, new[lstat])
+    return ret_str, change
+
+
 def form_update_summary(old, new):
     hit_str = ""
     pit_str = ""
-    brn_str = ""
+    run_str = ""
     def_str = ""
     vib_str = ""
     oth_str = ""
+    change = False
+
     if old is not None and new is not None:
-        for stat in hitting_stats:
-            diff = new[stat] - old[stat]
-            if diff < 0:
-                hit_str += "{}: {:.3f}\n".format(stat, diff)
-            elif diff > 0:
-                hit_str += "{}: +{:.3f}\n".format(stat, diff)
-        for stat in pitching_stats:
-            diff = new[stat] - old[stat]
-            if diff < 0:
-                pit_str += "{}: {:.3f}\n".format(stat, diff)
-            elif diff > 0:
-                pit_str += "{}: +{:.3f}\n".format(stat, diff)
-        for stat in baserunning_stats:
-            diff = new[stat] - old[stat]
-            if diff < 0:
-                brn_str += "{}: {:.3f}\n".format(stat, diff)
-            elif diff > 0:
-                brn_str += "{}: +{:.3f}\n".format(stat, diff)
-        for stat in defense_stats:
-            diff = new[stat] - old[stat]
-            if diff < 0:
-                def_str += "{}: {:.3f}\n".format(stat, diff)
-            elif diff > 0:
-                def_str += "{}: +{:.3f}\n".format(stat, diff)
-        for stat in vibe_stats:
-            diff = new[stat] - old[stat]
-            if diff < 0:
-                vib_str += "{}: {:.3f}\n".format(stat, diff)
-            elif diff > 0:
-                vib_str += "{}: +{:.3f}\n".format(stat, diff)
-        for stat in other_stats:
-            diff = new[stat] - old[stat]
-            if diff < 0:
-                oth_str += "{}: {:.3f}\n".format(stat, diff)
-            elif diff > 0:
-                oth_str += "{}: +{:.3f}\n".format(stat, diff)
-    summary = ""
-    if not hit_str == "":
-        summary += "Hitting Changes:\n{}\n".format(hit_str)
-    if not pit_str == "":
-        summary += "Pitching Changes:\n{}\n".format(pit_str)
-    if not brn_str == "":
-        summary += "Baserunning Changes:\n{}\n".format(brn_str)
-    if not def_str == "":
-        summary += "Defense Changes:\n{}\n".format(def_str)
-    if not hit_str == "":
-        summary += "Vibe Changes:\n{}\n".format(vib_str)
-    if not oth_str == "":
-        summary += "Other Changes:\n{}\n".format(oth_str)
-    return summary
+        hit_str, hchange = update_str_helper(new, old, hitting_stats)
+        pit_str, pchange = update_str_helper(new, old, pitching_stats)
+        run_str, rchange = update_str_helper(new, old, baserunning_stats)
+        def_str, dchange = update_str_helper(new, old, defense_stats)
+        vib_str, vchange = update_str_helper(new, old, vibe_stats)
+        oth_str, ochange = update_str_helper(new, old, other_stats)
+
+        change = hchange or pchange or rchange or dchange or vchange or ochange
+    else:
+        return "No changes to report!", None
+
+    if change:
+        emb = discord.Embed(title="Summary of Changes to {}".format(new['name']))
+        emb.add_field(name="Hitting", value = hit_str, inline = True)
+        emb.add_field(name="Pitching", value=pit_str, inline=True)
+        emb.add_field(name="\u200B", value="\u200B", inline=True)
+        emb.add_field(name="Baserunning", value=run_str, inline=True)
+        emb.add_field(name="Defense", value=def_str, inline=True)
+        emb.add_field(name="\u200B", value="\u200B", inline=True)
+        emb.add_field(name="Vibes", value=vib_str, inline=True)
+        emb.add_field(name="Other", value=oth_str, inline=True)
+        emb.add_field(name="\u200B", value="\u200B", inline=True)
+
+        return "", emb
+    return "No changes to report!", None
 
 
 print("main: Starting bot init!")
@@ -471,8 +465,12 @@ async def sort(ctx, *, arg_str):
     if len(tokens) > 1:
         location = tokens[1]
     if stat not in all_stats:
-        await ctx.send("{} is not a recognized stat!".format(stat))
-        return
+        lower_stats = {k.lower() : k for k in all_stats}
+        if stat.lower() not in lower_stats:
+            await ctx.send("{} is not a recognized stat!".format(stat))
+            return
+        else:
+            stat = lower_stats[stat.lower()]
     if location is not None:
         if location.lower() not in location_map.keys():
             await ctx.send("{} is not a valid location!".format(location))
@@ -490,7 +488,7 @@ async def sort(ctx, *, arg_str):
             print("Couldn't find player {}".format(p))
             continue
         player_name = player_dict["name"]
-        player_stat = player_dict[stat]
+        player_stat = player_dict[stat.lower()]
         stat_map[player_name] = player_stat
     err, emb = print_sorted_team(team_cache["fullName"], stat, stat_map)
     if not err:
@@ -567,11 +565,13 @@ async def update(ctx, *, arg_str):
     ret_str = await cache.update_player(arg_str)
     new_cache = cache.get_player(arg_str)
 
-    summary = form_update_summary(old_cache, new_cache)
+    upd_str, emb = form_update_summary(old_cache, new_cache)
 
     await ctx.send(ret_str)
-    if not summary == "":
-        await ctx.send("Summary of changes:\n\n{}".format(summary))
+    if upd_str != "":
+        await ctx.send(upd_str)
+    if emb is not None:
+        await ctx.send(embed=emb)
     return
 
 
