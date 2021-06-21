@@ -3,6 +3,27 @@ import aiohttp
 import time
 from discord.ext import tasks
 
+hitting_stats = ['trueHitting', 'hittingRating',
+                 'divinity', 'martyrdom',
+                 'moxie', 'musclitude',
+                 'patheticism', 'thwackability',
+                 'tragicness']
+pitching_stats = ['truePitching', 'pitchingRating',
+                  'coldness', 'overpowerment',
+                  'ruthlessness', 'shakespearianism',
+                  'suppression', 'unthwackability']
+baserunning_stats = ['trueBaserunning', 'baserunningRating',
+                     'baseThirst', 'continuation',
+                     'groundFriction', 'indulgence',
+                     'laserlikeness']
+defense_stats = ['trueDefense', 'defenseRating',
+                 'anticapitalism', 'chasiness',
+                 'omniscience', 'tenaciousness',
+                 'watchfulness']
+vibe_stats = ['buoyancy', 'cinnamon', 'pressurization']
+other_stats = ['totalFingers', 'peanutAllergy',
+               'soul', 'eDensity', 'evolution']
+all_stats = hitting_stats + pitching_stats + baserunning_stats + defense_stats + vibe_stats + other_stats
 
 def add_true_ratings(player_dict):
     term1 = 1 - player_dict["tragicness"]
@@ -75,10 +96,10 @@ class PlayerCache:
                         self.team_map[team['shorthand'].lower()] = team_id
                         self.team_cache[team_id] = team
 
-#                        self.player_ids.update(team['lineup'])
-#                        self.player_ids.update(team['rotation'])
-#                        self.player_ids.update(team['bullpen'])
-#                        self.player_ids.update(team['bench'])
+                        self.player_ids.update(team['lineup'])
+                        self.player_ids.update(team['rotation'])
+                        self.player_ids.update(team['shadows'])
+
                 else:
                     print("Bad response " + str(resp.status))
                     return
@@ -111,8 +132,14 @@ class PlayerCache:
                         for p in data:
                             pid = p['id']
                             add_true_ratings(p)
-                            self.player_cache[pid] = p
+                            for stat in all_stats:
+                                if p[stat] is None:
+                                    p[stat] = 0
+                            self.player_cache[pid] = {k.lower() : v for k, v in p.items()}
                             self.player_cache[pid]['update_time'] = update_time
+                            self.player_map[p['name'].lower()] = pid
+                            if 'unscatteredName' in p['state'].keys():
+                                self.player_map[p['state']['unscatteredName'].lower()] = pid
                     else:
                         print("Bad response " + str(resp.status))
                         return
@@ -134,7 +161,11 @@ class PlayerCache:
         else:
             return None
 
+    def get_cache(self):  # Ok, but why would you do this.
+        return self.player_cache
+
     async def update_player(self, key):
+        key = key.lower()
         if key in self.player_cache.keys():
             player_id = key
             player_name = self.player_cache[key]['name']
@@ -144,8 +175,8 @@ class PlayerCache:
         else:
             return "I couldn't find that player! If they were just hatched, it'll take me some time to find them..."
         cur_time = int(time.time())
-        if (cur_time - self.player_cache[player_id]["update_time"]) < 60:
-            return "I've updated this player within the last minute!"
+        # if (cur_time - self.player_cache[player_id]["update_time"]) < 60:
+        #    return "I've updated this player within the last minute!"
         await self.form_cache(players=player_id)
         return "Updated the data for {}!".format(player_name)
 
