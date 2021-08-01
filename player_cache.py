@@ -90,9 +90,14 @@ class PlayerCache:
                     for team in data:
                         team_id = team['id']
                         self.team_ids.update(team_id)
-                        self.team_map[team['fullName'].lower()] = team_id
-                        self.team_map[team['location'].lower()] = team_id
-                        self.team_map[team['nickname'].lower()] = team_id
+                        if 'scattered' in team['state'].keys():
+                            self.team_map[team['state']['scattered']['fullName'].lower()] = team_id
+                            self.team_map[team['state']['scattered']['location'].lower()] = team_id
+                            self.team_map[team['state']['scattered']['nickname'].lower()] = team_id
+                        else:
+                            self.team_map[team['fullName'].lower()] = team_id
+                            self.team_map[team['location'].lower()] = team_id
+                            self.team_map[team['nickname'].lower()] = team_id
                         self.team_map[team['shorthand'].lower()] = team_id
                         self.team_cache[team_id] = team
 
@@ -169,9 +174,13 @@ class PlayerCache:
         if key in self.player_cache.keys():
             player_id = key
             player_name = self.player_cache[key]['name']
+            if 'unscatteredName' in self.player_cache[key]['state'].keys():
+                player_name = self.player_cache[key]['state']['unscatteredName']
         elif key in self.player_map.keys():
             player_id = self.player_map[key]
             player_name = self.player_cache[player_id]['name']
+            if 'unscatteredName' in self.player_cache[player_id]['state'].keys():
+                player_name = self.player_cache[player_id]['state']['unscatteredName']
         else:
             return "I couldn't find that player! If they were just hatched, it'll take me some time to find them..."
         cur_time = int(time.time())

@@ -83,7 +83,10 @@ def print_player_fk(player_dict):
     vib_str = get_stats_str(player_dict, vibe_stats)
     oth_str = get_stats_str(player_dict, other_stats)
     update_time = datetime.datetime.fromtimestamp(player_dict['update_time']).strftime('%Y-%m-%d %H:%M:%S')
-    emb = discord.Embed(title="{} -- {}".format(player_dict['name'], player_dict['id']))
+    player_name = player_dict['name']
+    if 'unscatteredName' in player_dict['state'].keys():
+        player_name = player_dict['state']['unscatteredName']
+    emb = discord.Embed(title="{} -- {}".format(player_name, player_dict['id']))
     emb.add_field(name="Hitting:  {:.2f} ({:.2f}) Stars".format(
         player_dict["hittingrating"]*5, player_dict["truehitting"]*5), value=hit_str, inline=True)
     emb.add_field(name="Pitching:  {:.2f} ({:.2f}) Stars".format(
@@ -188,10 +191,16 @@ def print_player_comp(category, player1_dict, player2_dict):
         title_string += "\u200B\n"
         pl1_string += "\u200B\n"
         pl2_string += "\u200B\n"
-    emb = discord.Embed(title="{} vs. {}: {}".format(player1_dict["name"], player2_dict["name"], category.title()))
+    player1_name = player1_dict["name"]
+    if "unscatteredName" in player1_dict["state"].keys():
+        player1_name = player1_dict["state"]["unscatteredName"]
+    player2_name = player2_dict["name"]
+    if "unscatteredName" in player2_dict["state"].keys():
+        player2_name = player2_dict["state"]["unscatteredName"]
+    emb = discord.Embed(title="{} vs. {}: {}".format(player1_name, player2_name, category.title()))
     emb.add_field(name="Stat", value=title_string, inline=True)
-    emb.add_field(name="{0[name]}".format(player1_dict), value=pl1_string, inline=True)
-    emb.add_field(name="{0[name]}".format(player2_dict), value=pl2_string, inline=True)
+    emb.add_field(name="{}".format(player1_name), value=pl1_string, inline=True)
+    emb.add_field(name="{}".format(player2_name), value=pl2_string, inline=True)
     return err, emb
 
 
@@ -249,8 +258,14 @@ def quote_parse_player(arg_str):
 def calculate_rmse_dict(cat, player_cache, mod):
     full_cache = cache.get_cache()
     rms_dict = {}
+    player_name = player_cache["name"]
+    if "unscatteredName" in player_cache["state"].keys():
+        player_name = player_cache["state"]["unscatteredName"]
     for pid, val in full_cache.items():
-        if val["name"] == player_cache["name"]:
+        val_name = val["name"]
+        if "unscatteredName" in val["state"].keys():
+            val_name = val["state"]["unscatteredName"]
+        if val_name == player_name:
             continue  # don't compare against self
         if val["leagueteamid"] is None or val["leagueteamid"] == "c6c01051-cdd4-47d6-8a98-bb5b754f937f":
             continue  # don't compare to Hall Stars or Tournament Teams
@@ -299,7 +314,7 @@ def calculate_rmse_dict(cat, player_cache, mod):
                     stat_val = 0.001
                 total += (stat_val - val[stat.lower()]) ** 2
                 counter += 1
-        rms_dict[val["name"]] = math.sqrt(total / counter)
+        rms_dict[val_name] = math.sqrt(total / counter)
     return rms_dict
 
 
@@ -342,7 +357,10 @@ def form_update_summary(old, new):
         return "No changes to report!", None
 
     if change:
-        emb = discord.Embed(title="Summary of Changes to {}".format(new['name']))
+        new_name = new['name']
+        if 'unscatteredName' in new['state']:
+            new_name = new['state']['unscatteredName']
+        emb = discord.Embed(title="Summary of Changes to {}".format(new_name))
         emb.add_field(name="Hitting", value = hit_str, inline = True)
         emb.add_field(name="Pitching", value=pit_str, inline=True)
         emb.add_field(name="\u200B", value="\u200B", inline=True)
@@ -488,9 +506,14 @@ async def sort(ctx, *, arg_str):
             print("Couldn't find player {}".format(p))
             continue
         player_name = player_dict["name"]
+        if 'unscatteredName' in player_dict['state'].keys():
+            player_name = player_dict['state']['unscatteredName']
         player_stat = player_dict[stat.lower()]
         stat_map[player_name] = player_stat
-    err, emb = print_sorted_team(team_cache["fullName"], stat, stat_map)
+    team_name = team_cache['fullName']
+    if 'scattered' in team_cache['state'].keys():
+        team_name = team_cache['state']['scattered']['fullName']
+    err, emb = print_sorted_team(team_name, stat, stat_map)
     if not err:
         await ctx.send(embed=emb)
     return
@@ -540,9 +563,12 @@ async def similar(ctx, *, arg_str):
 
     sorted_results = sorted(rms_dict.items(), key=lambda item: item[1])
 
-    emb = discord.Embed(title="Similar Players to {} : {}".format(player_cache["name"], cat.title()))
+    player_name = player_cache["name"]
+    if "unscatteredName" in player_cache["state"].keys():
+        player_name = player_cache["state"]["unscatteredName"]
+    emb = discord.Embed(title="Similar Players to {} : {}".format(player_name, cat.title()))
     if mod:
-        emb.description = "Applied a modifier of {} to all of {}'s stats!".format(mod, player_cache["name"])
+        emb.description = "Applied a modifier of {} to all of {}'s stats!".format(mod, player_name)
     name_str = ""
     rms_str = ""
     for top in sorted_results[0:5]:
