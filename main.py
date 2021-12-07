@@ -42,7 +42,7 @@ defense_stats = ['trueDefense', 'defenseRating',
                  'watchfulness']
 vibe_stats = ['buoyancy', 'cinnamon', 'pressurization']
 other_stats = ['totalFingers', 'peanutAllergy',
-               'soul', 'eDensity', 'evolution']
+               'soul', 'evolution']
 all_stats = hitting_stats + pitching_stats + baserunning_stats + defense_stats + vibe_stats + other_stats
 
 # h = hitting, b = baserunning, p = pitching, d = defense, v = vibes, o = other
