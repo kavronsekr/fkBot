@@ -22,7 +22,7 @@ defense_stats = ['trueDefense', 'defenseRating',
                  'watchfulness']
 vibe_stats = ['buoyancy', 'cinnamon', 'pressurization']
 other_stats = ['totalFingers', 'peanutAllergy',
-               'soul', 'eDensity', 'evolution']
+               'soul', 'evolution']
 all_stats = hitting_stats + pitching_stats + baserunning_stats + defense_stats + vibe_stats + other_stats
 
 def add_true_ratings(player_dict):
@@ -84,7 +84,7 @@ class PlayerCache:
         print("cache_loop: Spawning ClientSession")
         async with aiohttp.ClientSession() as session:
             print("cache_loop: Connecting to blaseball/sibr")
-            async with session.get('https://blaseball.com/database/allTeams') as resp:
+            async with session.get('https://api.blaseball.com/database/allTeams') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
                     for team in data:
@@ -130,7 +130,7 @@ class PlayerCache:
         async with aiohttp.ClientSession() as session:
             for split_list in [plist[i:i + 100] for i in range(0, len(plist), 100)]:
                 req_str = ','.join(split_list)
-                async with session.get('https://blaseball.com/database/players?ids=' + req_str) as resp:
+                async with session.get('https://api.blaseball.com/database/players?ids=' + req_str) as resp:
                     if resp.status == 200:
                         data = json.loads(await resp.text())
                         update_time = int(time.time())
