@@ -87,7 +87,7 @@ class PlayerCache:
         self.team_map = dict()
         self.team_ids = set()
 
-        self.sc_cache_loop.start()
+        self.cache_loop.start()
         return
 
     def is_player(self, player):
@@ -109,7 +109,7 @@ class PlayerCache:
         print("cache_loop: Spawning ClientSession")
         async with aiohttp.ClientSession() as session:
             print("cache_loop: Connecting to blaseball/sibr")
-            async with session.get('https://api.blaseball.com/database/allTeams') as resp:
+            async with session.get('https://api.blaseball.com/database/teams') as resp:
                 if resp.status == 200:
                     data = json.loads(await resp.text())
                     for team in data:
